@@ -1,0 +1,46 @@
+name: EDSR_FastMRI
+seed: 1234
+track: &track True
+script_path: /Users/bniepce/Projects/Research/MRI/SRFastMRI/
+model:
+  class_name: EDSR
+  module_name: src.models.super_resolution
+  parameters:
+    in_channels: 1
+    scale_factor: 2
+    num_blocks: 16
+    num_feats: 64
+
+dataloader:
+  class_name: SRKneeMRILoader
+  module_name: src.data.loaders.kneeMRI
+  parameters:
+    train_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_train/
+    val_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_val/
+    input_size: !!python/tuple [128, 128]
+    batch_size: 32
+    num_workers: 8
+    debug: False
+
+trainer:
+  class_name: EDSRTrainer
+  module_name: tasks.EDSR.trainer
+  parameters:
+    num_epochs: 50
+    early_stopping_patience: 20
+    lr_scheduler: plateau
+    lr: 0.0001
+    weight_decay: 0.0001
+    track: *track
+    loss:
+      module_name: torch.nn
+      class_name: L1Loss
+      parameters:
+    metric:
+      module_name: torchmetrics.image
+      class_name: PeakSignalNoiseRatio
+      parameters:
+
+experiment:
+  class_name: BaseExperiment
+  module_name: src.core.experiment
