@@ -1,6 +1,5 @@
 from pathlib import Path
 from typing import (
-    Tuple,
     Union,
 )
 import h5py
@@ -8,6 +7,7 @@ import torch
 from src.data.utils.fastMRI.transforms import SuperResolutionTransform
 from onnxruntime.quantization import CalibrationDataReader
 from src.utils.image import extract_patches
+from src.data.utils.fastMRI.transforms import SRSample
 
 class FastMRISuperResolutionDataset(torch.utils.data.Dataset):
     def __init__(
@@ -45,12 +45,12 @@ class FastMRISuperResolutionDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.samples)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> SRSample:
         fname, slice_idx = self.samples[idx]
         with h5py.File(fname, "r") as hf:
             image = hf[self.recons_key][slice_idx]
-        image, target = self.transform(image, self.lr_image_scale)
-        return image, target
+        sample = self.transform(image, self.lr_image_scale)
+        return sample
     
 class FastMRISuperResolutionDataReader(CalibrationDataReader):
     def __init__(self, data_folder, num_samples=100):
@@ -70,7 +70,7 @@ class FastMRISuperResolutionDataReader(CalibrationDataReader):
                 break
             batch_data.append(lr.numpy())
 
-        self.enum_data_dicts = iter([{"input": img} for img in batch_data])
+        self.enum_data_dicts = iter([{"input": sample.image} for sample in batch_data])
 
     def get_next(self):
         return next(self.enum_data_dicts, None)
@@ -107,5 +107,5 @@ class FastMRIPatchSuperResolutionDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         patch = self.samples[idx]
-        lr_patch, hr_patch = self.transform(patch, self.lr_image_scale)
-        return lr_patch, hr_patch
+        sample = self.transform(patch, self.lr_image_scale)
+        return sample

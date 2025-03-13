@@ -5,10 +5,10 @@ from tqdm import tqdm
 from src.core.trainer import BaseTrainer
 import torch.nn.functional as F
 
-class EDSRTrainer(BaseTrainer):
+class FSRCNNTrainer(BaseTrainer):
 
     def __init__(self, model: nn.Module, parameters: dict, device: str):
-        super(EDSRTrainer, self).__init__(model, parameters, device)
+        super(FSRCNNTrainer, self).__init__(model, parameters, device)
         if not self.criterion:
             self.criterion = nn.L1Loss()
 
@@ -69,4 +69,3 @@ class EDSRTrainer(BaseTrainer):
         all_preds = torch.cat(all_preds)
         test_loss /= len(val_loader)
         return test_loss, all_preds, all_targets
-

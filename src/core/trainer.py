@@ -37,11 +37,13 @@ class BaseTrainer(object):
                                    parameters['loss']['class_name'], 
                                    parameters['loss']['parameters'])
 
-
-        # VAL METRIC
-        self.metric = instanciate_module(parameters['metric']['module_name'],
-                                   parameters['metric']['class_name'], 
-                                   parameters['metric']['parameters'])
+        # VAL METRICS
+        self.metrics = []
+        for metric_config in parameters['metric']:
+            metric_instance = instanciate_module(metric_config['module_name'],
+                                   metric_config['class_name'], 
+                                   metric_config['parameters'])
+            self.metrics.append({'name': metric_config['class_name'], 'func': metric_instance})
         
     def train(self, dl: DataLoader):
         raise NotImplementedError
@@ -54,20 +56,25 @@ class BaseTrainer(object):
         for epoch in range(num_epochs):
             train_loss = self.train(train_dl)
             test_loss, all_preds, all_targets = self.test(test_dl)
-            metric_value = self.metric(all_preds, all_targets)
-            
+            test_metrics = [{'name': metric['name'], 'value': metric['func'](all_preds, all_targets)} for metric in self.metrics]
+
             if self.parameters['track']:
                 wandb.log({f"Train/{self.parameters['loss']['class_name']}": train_loss, '_step_': epoch})
                 wandb.log({f"Test/{self.parameters['loss']['class_name']}": test_loss, '_step_': epoch})
-                wandb.log({f"Test/{self.parameters['metric']['class_name']}": metric_value, '_step_': epoch})
+                for metric in test_metrics:
+                    wandb.log({f"Test/{metric['name']}": metric['value'], '_step_': epoch})
                 
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step(test_loss)
 
             self.early_stop(self.model, test_loss, log_dir, epoch)
 
-            logging.info(
-                f"Epoch {epoch+1} / {num_epochs} -  Train/Test {self.parameters['loss']['class_name']}: {train_loss:.4f} | {test_loss:4f}; {self.parameters['metric']['class_name']} : {metric_value:4f}")
+            epoch_log_message = f"Epoch {epoch + 1} / {num_epochs} - Train/Test {self.parameters['loss']['class_name']}: {train_loss:.4f} | {test_loss:.4f}"
+
+            for metric in test_metrics:
+                epoch_log_message += f"; {metric['name']}: {metric['value']:.4f}"
+
+            logging.info(epoch_log_message)
 
             if self.early_stop.stop:
                 logging.info(
