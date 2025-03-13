@@ -77,7 +77,7 @@ class SRKneeMRILoader(AbstractDataloader):
     def __init__(self, 
                  train_data_dir: str, 
                  val_data_dir: str, 
-                 input_size: tuple = (320, 320), 
+                 lr_image_scale: int = 2, 
                  batch_size: int = 4, 
                  num_workers: int = 4,
                  debug: bool = True):
@@ -87,7 +87,7 @@ class SRKneeMRILoader(AbstractDataloader):
         self.val_data_dir = val_data_dir
         self.debug = debug
         
-        self.input_size = input_size
+        self.lr_image_scale = lr_image_scale
         self.batch_size = batch_size
         self.num_workers = num_workers 
 
@@ -97,7 +97,7 @@ class SRKneeMRILoader(AbstractDataloader):
         train_dataset = FastMRISuperResolutionDataset(
             root=pathlib.Path(self.train_data_dir),
             challenge=self.challenge,
-            input_size=self.input_size
+            lr_image_scale=self.lr_image_scale
         )
         
         if self.debug:
@@ -115,7 +115,7 @@ class SRKneeMRILoader(AbstractDataloader):
         val_dataset = FastMRISuperResolutionDataset(
             root=pathlib.Path(self.val_data_dir),
             challenge=self.challenge,
-            input_size=self.input_size
+            lr_image_scale=self.lr_image_scale
         )
         
         if self.debug:

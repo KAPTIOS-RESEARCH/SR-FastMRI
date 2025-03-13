@@ -46,9 +46,7 @@ class EDSRTrainer(BaseTrainer):
                     all_targets.append(targets.cpu())
 
                     if idx == 0 and self.parameters['track']:
-                        # Resize data to match the size of targets and outputs (256x256)
-                        resized_data = F.interpolate(data[:5], size=(256, 256), mode='bilinear', align_corners=False).cpu()
-
+                        resized_data = F.interpolate(data[:5], size=(targets.shape[-1], targets.shape[-1]), mode='bilinear', align_corners=False).cpu()
                         paired_images = torch.stack([
                             resized_data,
                             targets[:5].cpu(),

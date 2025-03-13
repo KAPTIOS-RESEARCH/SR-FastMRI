@@ -473,13 +473,13 @@ class SuperResolutionTransform:
     def __call__(
         self,
         image: np.ndarray,
-        input_size: tuple,
+        scale: int,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, str, int, float]:
         image = torch.from_numpy(image)
         image, _, _ = normalize_instance(image, eps=1e-11)
         image = image.clamp(-6, 6)
-        image = resize_tensor(image, (256, 256))
-        lr_image = downsample_hr_mri(image, target_size=input_size[0])
+        input_size = image.shape[-1]
+        lr_image = downsample_hr_mri(image, target_size=input_size//scale)
         return lr_image.unsqueeze(0), image.unsqueeze(0)
 
 

@@ -9,7 +9,7 @@ model:
     in_channels: 1
     scale_factor: 2
     num_blocks: 16
-    num_feats: 64
+    num_feats: 128
 
 dataloader:
   class_name: SRKneeMRILoader
@@ -17,8 +17,8 @@ dataloader:
   parameters:
     train_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_train/
     val_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_val/
-    input_size: !!python/tuple [128, 128]
-    batch_size: 32
+    lr_image_scale: 2
+    batch_size: 8
     num_workers: 8
     debug: False
 

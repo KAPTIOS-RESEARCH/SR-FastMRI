@@ -104,21 +104,16 @@ def get_session_performance(
     times = []
     input_name = session.get_inputs()[0].name
     output_name = session.get_outputs()[0].name
-    correct_preds = 0
     images, labels = data_sample
-    for x, y in zip(images, labels):
+    for x, _ in zip(images, labels):
         x = x.numpy()
         x = np.expand_dims(x, axis=0)
         start_time = time.perf_counter()
-        output = session.run([output_name], {input_name: x})[0]
-        pred = np.argmax(output, axis=1)[0]
+        session.run([output_name], {input_name: x})[0]
         times.append(time.perf_counter() - start_time)
-        if pred == y:
-            correct_preds += 1
 
     avg_time_ms = np.mean(times) * 1000
-    accuracy = correct_preds / len(images)
-    return avg_time_ms, accuracy
+    return avg_time_ms
 
 def quantized_session_performance_benchmark(
         original_model_path: str,
@@ -138,9 +133,9 @@ def quantized_session_performance_benchmark(
     non_quantized_session = InferenceSession(original_model_path, providers=device_providers)
     quantized_session = InferenceSession(quantized_model_path, providers=device_providers)
 
-    t1, acc1 = get_session_performance(non_quantized_session, data_sample)
-    t2, acc2 = get_session_performance(quantized_session, data_sample)
+    t1 = get_session_performance(non_quantized_session, data_sample)
+    t2 = get_session_performance(quantized_session, data_sample)
 
-    print(f"🟢 Non-Quantized Model Avg Inference Time: {t1:.2f} ms | Avg Accuracy: {acc1:.2%}")
-    print(f"🔥 Quantized Model Avg Inference Time: {t2:.2f} ms | Avg Accuracy: {acc2:.2%}")
+    print(f"🟢 Non-Quantized Model Avg Inference Time: {t1:.2f} ms")
+    print(f"🔥 Quantized Model Avg Inference Time: {t2:.2f} ms")
     print(f"🚀 Speedup: {t1 / t1:.2f}x faster with quantization")
