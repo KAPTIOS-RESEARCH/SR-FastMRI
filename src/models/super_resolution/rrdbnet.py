@@ -72,7 +72,7 @@ class RRDBNet(nn.Module):
         nb (int): Number of RRDB blocks.
         gc (int): Growth channel.
     """
-    def __init__(self, in_channels, out_channels, n_feature_maps, n_blocks, growth_channel = 32):
+    def __init__(self, in_channels = 1, out_channels = 1, n_feature_maps = 64, n_blocks = 23, growth_channel = 32):
         super(RRDBNet, self).__init__()
         RRDB_block_f = functools.partial(RRDB, in_channels = n_feature_maps, out_channels = growth_channel)
 
@@ -85,7 +85,6 @@ class RRDBNet(nn.Module):
 
         # Upsampling layers
         self.upconv1 = nn.Conv2d(n_feature_maps, n_feature_maps, 3, 1, 1, bias=True)
-        self.upconv2 = nn.Conv2d(n_feature_maps, n_feature_maps, 3, 1, 1, bias=True)
 
         # High-resolution and final output layers
         self.HRconv = nn.Conv2d(n_feature_maps, n_feature_maps, 3, 1, 1, bias=True)
@@ -103,7 +102,6 @@ class RRDBNet(nn.Module):
 
         # Upsampling by factor of 2 twice
         fea = self.lrelu(self.upconv1(F.interpolate(fea, scale_factor=2, mode='nearest')))
-        fea = self.lrelu(self.upconv2(F.interpolate(fea, scale_factor=2, mode='nearest')))
 
         # Final high-resolution output
         out = self.conv_last(self.lrelu(self.HRconv(fea)))

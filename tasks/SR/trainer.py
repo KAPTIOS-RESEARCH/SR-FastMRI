@@ -5,10 +5,10 @@ from tqdm import tqdm
 from src.core.trainer import BaseTrainer
 import torch.nn.functional as F
 
-class EDSRTrainer(BaseTrainer):
+class SRTrainer(BaseTrainer):
 
     def __init__(self, model: nn.Module, parameters: dict, device: str):
-        super(EDSRTrainer, self).__init__(model, parameters, device)
+        super(SRTrainer, self).__init__(model, parameters, device)
         if not self.criterion:
             self.criterion = nn.L1Loss()
 
@@ -40,15 +40,12 @@ class EDSRTrainer(BaseTrainer):
             with tqdm(val_loader, leave=False, desc="Running testing phase") as pbar:
                 for idx, sample in enumerate(val_loader):
                     data, targets = sample.image, sample.target
-                    mean = sample.mean.unsqueeze(1).unsqueeze(2).unsqueeze(3).to(self.device)
-                    std = sample.std.unsqueeze(1).unsqueeze(2).unsqueeze(3).to(self.device)
                     data, targets = data.to(self.device), targets.to(self.device)
                     outputs = self.model(data)
                     loss = self.criterion(outputs, targets)
                     test_loss += loss.item()
-                    outputs = outputs * std - mean
-                    targets = targets * std - mean
-                    all_preds.append(outputs.cpu())
+                    outputs = outputs.cpu().clamp(-6, 6)
+                    all_preds.append(outputs)
                     all_targets.append(targets.cpu())
                     if idx == 0 and self.parameters['track']:
                         resized_data = F.interpolate(data[:5], size=(targets.shape[-1], targets.shape[-1]), mode='bilinear', align_corners=False).cpu()
@@ -69,4 +66,3 @@ class EDSRTrainer(BaseTrainer):
         all_preds = torch.cat(all_preds)
         test_loss /= len(val_loader)
         return test_loss, all_preds, all_targets
-

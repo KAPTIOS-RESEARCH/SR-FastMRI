@@ -1,16 +1,15 @@
-name: FSRCNN_FastMRI
+name: EDSR_FastMRI
 seed: 1234
 track: &track True
 script_path: /Users/bniepce/Projects/Research/MRI/SRFastMRI/
-scaling_factor: &scaling_factor 2
 model:
-  class_name: FSRCNN
+  class_name: EDSR
   module_name: src.models.super_resolution
   parameters:
-    scale_factor: *scaling_factor
-    d: 64
-    s: 16
-    m: 4
+    in_channels: 1
+    scale_factor: 2
+    num_blocks: 16
+    num_feats: 64
 
 dataloader:
   class_name: SRKneeMRILoader
@@ -18,29 +17,29 @@ dataloader:
   parameters:
     train_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_train/
     val_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_val/
-    lr_image_scale: *scaling_factor
-    batch_size: 16
+    lr_image_scale: 2
+    batch_size: 8
     num_workers: 8
     debug: False
 
 trainer:
-  class_name: FSRCNNTrainer
-  module_name: tasks.FSRCNN.trainer
+  class_name: SRTrainer
+  module_name: tasks.SR.trainer
   parameters:
-    num_epochs: 25
-    early_stopping_patience: 5
+    num_epochs: 50
+    early_stopping_patience: 20
     lr_scheduler: plateau
-    lr: 0.00002
-    weight_decay: 0.
+    lr: 0.0001
+    weight_decay: 0.0001
     track: *track
     loss:
-      module_name: src.optimisation.losses
-      class_name: SRLoss
+      module_name: torch.nn
+      class_name: L1Loss
       parameters:
     metric:
-      - module_name: torchmetrics.image
-        class_name: PeakSignalNoiseRatio
-        parameters:
+      module_name: torchmetrics.image
+      class_name: PeakSignalNoiseRatio
+      parameters:
 
 experiment:
   class_name: BaseExperiment
