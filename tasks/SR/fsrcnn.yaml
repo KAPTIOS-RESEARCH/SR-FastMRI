@@ -1,15 +1,15 @@
 name: FSRCNN_FastMRI
 seed: 1234
 track: &track True
-script_path: /Users/bniepce/Projects/Research/MRI/SRFastMRI/
+script_path: /home/nvidia/Projects/Expe/FastMRI/SRFastMRI
 scaling_factor: &scaling_factor 2
 model:
   class_name: FSRCNN
   module_name: src.models.super_resolution
   parameters:
     scale_factor: *scaling_factor
-    d: 64
-    s: 16
+    d: 53
+    s: 12
     m: 4
 
 dataloader:
@@ -24,8 +24,8 @@ dataloader:
     debug: False
 
 trainer:
-  class_name: FSRCNNTrainer
-  module_name: tasks.FSRCNN.trainer
+  class_name: SRTrainer
+  module_name: tasks.SR.trainer
   parameters:
     num_epochs: 50
     early_stopping_patience: 5
@@ -35,7 +35,7 @@ trainer:
     track: *track
     loss:
       module_name: src.optimisation.losses
-      class_name: SRLoss
+      class_name: SRUNetLoss
       parameters:
     metric:
       - module_name: torchmetrics.image

@@ -1,7 +1,7 @@
 name: UNET_FastMRI
 seed: 1234
 track: &track True
-script_path: /Users/bniepce/Projects/Research/MRI/SRFastMRI/
+script_path: /home/nvidia/Projects/Expe/FastMRI/SRFastMRI
 scaling_factor: &scaling_factor 2
 model:
   class_name: SRUNet
@@ -23,16 +23,17 @@ trainer:
   class_name: SRTrainer
   module_name: tasks.SR.trainer
   parameters:
-    num_epochs: 50
+    num_epochs: 30
     early_stopping_patience: 5
     lr_scheduler: plateau
-    lr: 0.0001
-    weight_decay: 0.
+    lr: 0.00005
+    weight_decay: 0.00001
     track: *track
     loss:
       module_name: src.optimisation.losses
-      class_name: SRUNetLoss
+      class_name: L1EdgeMSSIMLoss
       parameters:
+        alpha: 0.84
     metric:
       - module_name: torchmetrics.image
         class_name: PeakSignalNoiseRatio

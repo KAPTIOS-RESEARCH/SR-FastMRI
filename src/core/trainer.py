@@ -12,7 +12,7 @@ class BaseTrainer(object):
         self.model = model
         self.parameters = parameters
         self.device = device
-        self.early_stop = EarlyStopping(patience=parameters['early_stopping_patience'])
+        self.early_stop = EarlyStopping(patience=parameters['early_stopping_patience'], enable_wandb=parameters['track'])
         
         # OPTIMIZER
         self.optimizer = Adam(

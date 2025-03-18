@@ -5,6 +5,7 @@ from torchvision import models
 from torchvision import transforms
 from src.utils.device import get_available_device
 from torchmetrics.image import StructuralSimilarityIndexMeasure as SSIM
+from torchmetrics.image import MultiScaleStructuralSimilarityIndexMeasure as MSSIM
 
 # Sobel filter for edge detection
 class SobelFilter(nn.Module):
@@ -92,73 +93,68 @@ class SRLoss(nn.Module):
         return edge_loss + pixel_loss + feature_loss
 
 
-class GradientLoss(nn.Module):
+class SSIMMixedLoss(nn.Module):
     def __init__(self):
-        super(GradientLoss, self).__init__()
-        kernel1 = [[-1., -2., -1.],
-                  [0., 0., 0.],
-                  [1., 2., 1.]]
-        kernel1 = torch.FloatTensor(kernel1).unsqueeze(0).unsqueeze(0)
-        self.weight1 = nn.Parameter(data=kernel1, requires_grad=False)
-
-        kernel2 = [[-1., 0., 1.],
-                  [-2., 0., 2.],
-                  [-1., 0., 1.]]
-        kernel2 = torch.FloatTensor(kernel2).unsqueeze(0).unsqueeze(0)
-        self.weight2 = nn.Parameter(data=kernel2, requires_grad=False)
-
-    def forward(self, x, y):
-
-        x1 = x[:, 0]
-        x2 = x[:, 1]
-        x3 = x[:, 2]
-        x1 = F.conv2d(x1.unsqueeze(1), self.weight1, padding=2)
-        x2 = F.conv2d(x2.unsqueeze(1), self.weight1, padding=2)
-        x3 = F.conv2d(x3.unsqueeze(1), self.weight1, padding=2)
-
-        x = torch.cat([x1, x2, x3], dim=1)
-
-        y1 = y[:, 0]
-        y2 = y[:, 1]
-        y3 = y[:, 2]
-        y1 = F.conv2d(y1.unsqueeze(1), self.weight1, padding=2)
-        y2 = F.conv2d(y2.unsqueeze(1), self.weight1, padding=2)
-        y3 = F.conv2d(y3.unsqueeze(1), self.weight1, padding=2)
-
-        y = torch.cat([y1, y2, y3], dim=1)
-        loss1=torch.mean(torch.mean((x-y)**2))/100.0
-
-        x1 = x[:, 0]
-        x2 = x[:, 1]
-        x3 = x[:, 2]
-        x1 = F.conv2d(x1.unsqueeze(1), self.weight2, padding=2)
-        x2 = F.conv2d(x2.unsqueeze(1), self.weight2, padding=2)
-        x3 = F.conv2d(x3.unsqueeze(1), self.weight2, padding=2)
-
-        x = torch.cat([x1, x2, x3], dim=1)
-
-        y1 = y[:, 0]
-        y2 = y[:, 1]
-        y3 = y[:, 2]
-        y1 = F.conv2d(y1.unsqueeze(1), self.weight2, padding=2)
-        y2 = F.conv2d(y2.unsqueeze(1), self.weight2, padding=2)
-        y3 = F.conv2d(y3.unsqueeze(1), self.weight2, padding=2)
-
-        y = torch.cat([y1, y2, y3], dim=1)
-        loss2=torch.mean(torch.mean((x-y)**2))/10000.0
-        loss=torch.sqrt(loss1*loss1+loss2*loss2)*2
-        return loss
+        super(SSIMMixedLoss, self).__init__()
+        device = get_available_device()
+        self.lambda_1 = 0.7
+        self.lambda_2 = 0.3
+        self.lambda_3 = 1
+        self.content = ContentLoss()
+        self.ssim = SSIM().to(device)
     
+    def forward(self, x, y):
+        content_loss = self.content(x, y)
+        ssim_loss = 1 - self.ssim(x, y)
+        edge_loss = self.lambda_1 * content_loss['edge_loss']
+        pixel_loss = self.lambda_2 * content_loss['pixel_loss']        
+        feature_loss = self.lambda_3 * ssim_loss
+        return edge_loss + pixel_loss + feature_loss
+
+
 class SRUNetLoss(nn.Module):
     def __init__(self):
         super(SRUNetLoss, self).__init__()
         device = get_available_device()
         self.l1_loss = nn.L1Loss()
-        self.gradient_loss = GradientLoss()
         self.ssim = SSIM().to(device)
         
     def forward(self, x, y):
         l1_loss = self.l1_loss(x, y)
-        # loss2 = self.gradient_loss(x, y)
         ssim_loss = 1 - self.ssim(x, y)
         return l1_loss + 0.1 * ssim_loss
+    
+class L1MSSIMLoss(nn.Module):
+    """Implementation from Loss Functions for Image Restoration with Neural Networks"""
+    def __init__(self, alpha: float = 0.84):
+        super(L1MSSIMLoss, self).__init__()
+        device = get_available_device()
+        self.alpha = alpha
+        self.l1_loss = nn.L1Loss()
+        self.mssim = MSSIM().to(device)
+        
+    def forward(self, x, y):
+        l1_loss = self.l1_loss(x, y)
+        mssim_loss = 1 - self.mssim(x, y)
+        return self.alpha * mssim_loss + (1 - self.alpha) * l1_loss
+    
+class L1EdgeMSSIMLoss(nn.Module):
+    def __init__(self, alpha: float = 0.84):
+        super(L1EdgeMSSIMLoss, self).__init__()
+        device = get_available_device()
+        self.alpha = alpha
+        self.l1_loss = nn.L1Loss()
+        self.mssim = MSSIM().to(device)
+        self.edge_detector = SobelFilter().to(device)
+        
+    def edge_loss(self, A, B):
+        A_edge = self.edge_detector(A)
+        B_edge = self.edge_detector(B)
+        return self.l1_loss(A_edge, B_edge)
+    
+    def forward(self, x, y):
+        edge_loss = 0.7 * self.edge_loss(x, y)
+        l1_loss = self.l1_loss(x, y)
+        mssim_loss = 1 - self.mssim(x, y)
+        return self.alpha * mssim_loss + (1 - self.alpha) * l1_loss + edge_loss
+    
