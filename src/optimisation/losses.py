@@ -157,4 +157,3 @@ class L1EdgeMSSIMLoss(nn.Module):
         l1_loss = self.l1_loss(x, y)
         mssim_loss = 1 - self.mssim(x, y)
         return self.alpha * mssim_loss + (1 - self.alpha) * l1_loss + edge_loss
-    

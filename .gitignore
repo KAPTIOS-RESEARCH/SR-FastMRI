@@ -7,3 +7,4 @@ __pycache__
 /figures/
 /exports/
 *output*
+saved_models
