@@ -1,12 +1,17 @@
-name: SRRESUNET_FastMRI
+name: RealESRGAN_FastMRI
 seed: 1234
 track: &track True
 script_path: /home/nvidia/Projects/Expe/FastMRI/SRFastMRI
 scaling_factor: &scaling_factor 2
 model:
-  class_name: SRResUNet
+  class_name: RealESRGAN
   module_name: src.models.super_resolution
   parameters:
+    in_channels: 1
+    out_channels: 1
+    num_features: 48
+    num_blocks: 16
+    upscale_factor: *scaling_factor
 
 dataloader:
   class_name: SRKneeMRILoader
@@ -15,7 +20,7 @@ dataloader:
     train_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_train/
     val_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_val/
     lr_image_scale: *scaling_factor
-    batch_size: 16
+    batch_size: 8
     num_workers: 8
     debug: False
 
