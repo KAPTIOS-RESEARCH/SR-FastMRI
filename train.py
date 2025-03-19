@@ -9,7 +9,7 @@ if __name__ == "__main__":
 
     logging.basicConfig(
         level=logging.INFO,
-        format=f'%(asctime)s - {project_name} - %(levelname)s - %(message)s'
+        format=f'%(asctime)s - {project_name} Model Training - %(levelname)s - %(message)s'
     )
 
     parser = ArgumentParser()

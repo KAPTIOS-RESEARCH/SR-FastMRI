@@ -1,17 +1,13 @@
 export_path: './exports'
-model_path: './logs/EDSR_FastMRI_7f83/best_model.pth'
-model_input_size: !!python/tuple [128, 128]
+model_path: './saved_models/best_model.pth'
+model_input_size: !!python/tuple [160, 160]
 quantization_dataset:
   module_name: src.data.sets.super_resolution
   class_name: FastMRISuperResolutionDataReader
   parameters:
-    data_folder: /home/nvidia/Projects/Datasets/fastmri/singlecoil_val/
+    data_folder: /Volumes/T7_KAPTIOS/datasets/fastMRI/knee/singlecoil_val/
     num_samples: 100
 model:
-  class_name: EDSR
+  class_name: SRResUNet
   module_name: src.models.super_resolution
   parameters:
-    in_channels: 1
-    scale_factor: 2
-    num_blocks: 32
-    num_feats: 256

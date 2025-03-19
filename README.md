@@ -36,12 +36,12 @@ wandb login
 The CLI will ask for the API key that can be found in your wandb account page.
 
 
-## Running tasks
+## Running a training task
 
 You can run an task by pointing to its configuration file like :
 
 ```bash
-python main.py --config_path ./tasks/mnist/config.yaml
+python train.py --config_path ./tasks/SR/config.yaml
 ```
 
 

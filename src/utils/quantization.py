@@ -3,9 +3,9 @@ import numpy as np
 from torch import nn
 from onnxruntime.quantization import quantize_static, CalibrationDataReader, QuantFormat
 from onnxruntime import InferenceSession
-from typing import Sequence, Any, Tuple
+from typing import Sequence, Any, Tuple, List
 from onnxruntime.quantization import quant_pre_process
-
+from src.data.utils.fastMRI.transforms import SRSample
 
 def get_layers_to_fuse(model: nn.Module, prefix: str = "") -> list:
     """Recursively retrieves a list of groupable layers for fusion.
@@ -90,13 +90,13 @@ def quantize_onnx_model(model_path: str, quantized_model_path: str, calibration_
 
 def get_session_performance(
     session: InferenceSession, 
-    data_sample: Tuple[torch.Tensor, torch.Tensor], 
+    data: List[SRSample], 
 ):
     """Run inference of a batch to retrieve the model accuracy and time performances.
 
     Args:
         session (InferenceSession): The model onnxruntime session
-        data_sample (tuple[torch.Tensor, torch.Tensor]): The batch input/target tuple to compute performances
+        data (List[SRSample]): The batch SRSample
 
     Returns:
         tuple[float, float]: Average inference time in milliseconds, accuracy
@@ -104,8 +104,7 @@ def get_session_performance(
     times = []
     input_name = session.get_inputs()[0].name
     output_name = session.get_outputs()[0].name
-    images, labels = data_sample
-    for x, _ in zip(images, labels):
+    for sample in data:
         x = x.numpy()
         x = np.expand_dims(x, axis=0)
         start_time = time.perf_counter()

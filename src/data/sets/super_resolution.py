@@ -65,12 +65,12 @@ class FastMRISuperResolutionDataReader(CalibrationDataReader):
         data_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
 
         batch_data = []
-        for i, (lr, _) in enumerate(data_loader):
+        for i, sample in enumerate(data_loader):
             if i >= self.num_samples:
                 break
-            batch_data.append(lr.numpy())
+            batch_data.append(sample)
 
-        self.enum_data_dicts = iter([{"input": sample.image} for sample in batch_data])
+        self.enum_data_dicts = iter([{"input": sample.image.numpy()} for sample in batch_data])
 
     def get_next(self):
         return next(self.enum_data_dicts, None)

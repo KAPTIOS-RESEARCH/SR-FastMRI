@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     logging.basicConfig(
         level=logging.INFO,
-        format=f'%(asctime)s - {project_name} - %(levelname)s - %(message)s'
+        format=f'%(asctime)s - {project_name} Model Exportation - %(levelname)s - %(message)s'
     )
 
     parser = ArgumentParser()
@@ -36,7 +36,7 @@ if __name__ == "__main__":
         model_cls,
         model_params
     )
-    model.load_state_dict(torch.load(export_config['model_path'], weights_only=True)['weights'])
+    model.load_state_dict(torch.load(export_config['model_path'], weights_only=True, map_location=torch.device('cpu'))['weights'])
     model.to('cpu')
     x = torch.randn((1, 1, *export_config['model_input_size']))
     save_to_onnx(export_path, model, x)
