@@ -137,9 +137,14 @@ class L1MSSIMEdgeLoss(nn.Module):
         self.l1_loss = nn.L1Loss()
         self.mssim = MSSIM().to(device)
         self.edge_detector = SobelFilter().to(device) if filter == 'sobel' else LaplacianFilter().to(device)
-        
+    
+    def l1_edge_loss(self, x, y):
+        A_edge = self.edge_detector(x)
+        B_edge = self.edge_detector(y)
+        return self.l1_loss(A_edge, B_edge)
+    
     def forward(self, x, y):
         l1_loss = self.l1_loss(x, y)
         mssim_loss = 1 - self.mssim(x, y)
-        edge_loss = 0.6 * self.edge_detector(x, y) 
+        edge_loss = 0.6 * self.l1_edge_loss(x, y) 
         return self.alpha * mssim_loss + (1 - self.alpha) * l1_loss + edge_loss
