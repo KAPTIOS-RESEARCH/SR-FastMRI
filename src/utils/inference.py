@@ -1,9 +1,8 @@
 import time
 import numpy as np
-import torch, logging
+import torch
 from onnxruntime import InferenceSession
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 def run_session_inference(session: InferenceSession, dataset: torch.utils.data.Dataset):
     """Run inference of an onnx session on all samples in the given dataset

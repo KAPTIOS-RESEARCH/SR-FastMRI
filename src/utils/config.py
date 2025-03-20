@@ -51,7 +51,7 @@ def validate_export_config_file(params: dict):
     file_keys = list(params.keys())
     base_message = "validate_config_file (AssertionError)]: "
     param_groups = ["model", "quantization_dataset"]
-    param_keys = ["export_path", "model_path", "model_input_size"]
+    param_keys = ["export_path", "model_path"]
 
     if type(params) is not dict:
         raise AssertionError(base_message + "params should be a dictionary")

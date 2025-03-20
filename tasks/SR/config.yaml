@@ -36,8 +36,10 @@ trainer:
     track: *track
     loss:
       module_name: src.optimisation.losses
-      class_name: EPFLoss
+      class_name: L1MSSIMEdgeLoss
       parameters:
+        alpha: 0.84
+        filter: sobel
     metric:
       - module_name: torchmetrics.image
         class_name: PeakSignalNoiseRatio

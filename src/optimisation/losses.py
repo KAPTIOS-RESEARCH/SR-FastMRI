@@ -7,7 +7,6 @@ from src.utils.device import get_available_device
 from torchmetrics.image import StructuralSimilarityIndexMeasure as SSIM
 from torchmetrics.image import MultiScaleStructuralSimilarityIndexMeasure as MSSIM
 
-# Sobel filter for edge detection
 class SobelFilter(nn.Module):
     def __init__(self):
         super(SobelFilter, self).__init__()
@@ -24,8 +23,18 @@ class SobelFilter(nn.Module):
         grad_x = self.sobel_x(x)
         grad_y = self.sobel_y(x)
         return torch.sqrt(grad_x ** 2 + grad_y ** 2)
+    
+class LaplacianFilter(nn.Module):
+    def __init__(self):
+        super(LaplacianFilter, self).__init__()
+        self.laplacian = nn.Conv2d(1, 1, kernel_size=3, padding=1, bias=False)
 
-# VGG19 feature extractor for perceptual loss
+        laplacian_weights = torch.tensor([[0, 1, 0], [1, -4, 1], [0, 1, 0]], dtype=torch.float32)
+        self.laplacian.weight = nn.Parameter(laplacian_weights.unsqueeze(0).unsqueeze(0), requires_grad=False)
+
+    def forward(self, x):
+        return self.laplacian(x)
+
 class VGG19FeatureExtractor(nn.Module):
     def __init__(self):
         super(VGG19FeatureExtractor, self).__init__()
@@ -45,9 +54,9 @@ class VGG19FeatureExtractor(nn.Module):
 class ContentLoss(nn.Module):
     def __init__(self):
         super(ContentLoss, self).__init__()
-        device = get_available_device()
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.l1_loss = nn.L1Loss()
-        self.edge_detector = SobelFilter().to(device)
+        self.edge_detector = LaplacianFilter().to(device)
         self.feature_extractor = VGG19FeatureExtractor().to(device)
 
     def preprocess_for_vgg(self, x):
@@ -76,7 +85,7 @@ class ContentLoss(nn.Module):
             'pixel_loss': self.pixel_loss(A, B),
             'feature_loss': self.feature_loss(A, B)
         }
-
+        
 class EPFLoss(nn.Module):
     def __init__(self):
         super(EPFLoss, self).__init__()
@@ -92,29 +101,9 @@ class EPFLoss(nn.Module):
         feature_loss = self.lambda_3 * content_loss['feature_loss']
         return edge_loss + pixel_loss + feature_loss
 
-
-class SSIMMixedLoss(nn.Module):
+class L1SSIM(nn.Module):
     def __init__(self):
-        super(SSIMMixedLoss, self).__init__()
-        device = get_available_device()
-        self.lambda_1 = 0.7
-        self.lambda_2 = 0.3
-        self.lambda_3 = 1
-        self.content = ContentLoss()
-        self.ssim = SSIM().to(device)
-    
-    def forward(self, x, y):
-        content_loss = self.content(x, y)
-        ssim_loss = 1 - self.ssim(x, y)
-        edge_loss = self.lambda_1 * content_loss['edge_loss']
-        pixel_loss = self.lambda_2 * content_loss['pixel_loss']        
-        feature_loss = self.lambda_3 * ssim_loss
-        return edge_loss + pixel_loss + feature_loss
-
-
-class SRUNetLoss(nn.Module):
-    def __init__(self):
-        super(SRUNetLoss, self).__init__()
+        super(L1SSIM, self).__init__()
         device = get_available_device()
         self.l1_loss = nn.L1Loss()
         self.ssim = SSIM().to(device)
@@ -137,23 +126,20 @@ class L1MSSIMLoss(nn.Module):
         l1_loss = self.l1_loss(x, y)
         mssim_loss = 1 - self.mssim(x, y)
         return self.alpha * mssim_loss + (1 - self.alpha) * l1_loss
+
     
-class L1EdgeMSSIMLoss(nn.Module):
-    def __init__(self, alpha: float = 0.84):
-        super(L1EdgeMSSIMLoss, self).__init__()
+class L1MSSIMEdgeLoss(nn.Module):
+    """Implementation from Loss Functions for Image Restoration with Neural Networks"""
+    def __init__(self, alpha: float = 0.84, filter: str = 'sobel'):
+        super(L1MSSIMLoss, self).__init__()
         device = get_available_device()
         self.alpha = alpha
         self.l1_loss = nn.L1Loss()
         self.mssim = MSSIM().to(device)
-        self.edge_detector = SobelFilter().to(device)
+        self.edge_detector = SobelFilter().to(device) if filter == 'sobel' else LaplacianFilter().to(device)
         
-    def edge_loss(self, A, B):
-        A_edge = self.edge_detector(A)
-        B_edge = self.edge_detector(B)
-        return self.l1_loss(A_edge, B_edge)
-    
     def forward(self, x, y):
-        edge_loss = 0.1 * self.edge_loss(x, y)
         l1_loss = self.l1_loss(x, y)
         mssim_loss = 1 - self.mssim(x, y)
+        edge_loss = 0.6 * self.edge_detector(x, y) 
         return self.alpha * mssim_loss + (1 - self.alpha) * l1_loss + edge_loss

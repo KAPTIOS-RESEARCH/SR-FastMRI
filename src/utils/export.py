@@ -19,7 +19,6 @@ def save_to_onnx(path: str, model: torch.nn.Module, tensor_x: torch.Tensor):
         dynamo=True,
         export_params=True, 
         opset_version=18,          
-        do_constant_folding=True,
         input_names = ['input'],                          
         output_names = ['output'],
     )

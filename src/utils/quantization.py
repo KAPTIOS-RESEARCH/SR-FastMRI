@@ -78,6 +78,7 @@ def quantize_onnx_model(model_path: str, quantized_model_path: str, calibration_
         quantized_model_path,
         calibration_dataset,
         quant_format=QuantFormat.QDQ,
+        activation_type=QuantType.QInt16,
         weight_type=QuantType.QInt8,
     )
     logging.info(f"Original ONNX model size (MB): {os.path.getsize(model_path) / (1024 * 1024):.2f}")
