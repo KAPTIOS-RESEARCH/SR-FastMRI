@@ -131,7 +131,7 @@ class L1MSSIMLoss(nn.Module):
 class L1MSSIMEdgeLoss(nn.Module):
     """Implementation from Loss Functions for Image Restoration with Neural Networks"""
     def __init__(self, alpha: float = 0.84, filter: str = 'sobel'):
-        super(L1MSSIMLoss, self).__init__()
+        super(L1MSSIMEdgeLoss, self).__init__()
         device = get_available_device()
         self.alpha = alpha
         self.l1_loss = nn.L1Loss()
