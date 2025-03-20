@@ -28,7 +28,7 @@ trainer:
   class_name: SRTrainer
   module_name: tasks.SR.trainer
   parameters:
-    num_epochs: 25
+    num_epochs: 50
     early_stopping_patience: 5
     lr_scheduler: plateau
     lr: 0.00002
@@ -38,14 +38,11 @@ trainer:
       module_name: src.optimisation.losses
       class_name: L1MSSIMEdgeLoss
       parameters:
-        alpha: 0.84
+        alpha: 0.9
         filter: sobel
     metric:
       - module_name: torchmetrics.image
         class_name: PeakSignalNoiseRatio
-        parameters:
-      - module_name: torchmetrics.image
-        class_name: StructuralSimilarityIndexMeasure
         parameters:
 
 experiment:
