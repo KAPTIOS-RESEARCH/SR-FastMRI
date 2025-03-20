@@ -4,9 +4,14 @@ track: &track True
 script_path: /home/nvidia/Projects/Expe/FastMRI/SRFastMRI
 scaling_factor: &scaling_factor 2
 model:
-  class_name: SRResUNet
+  class_name: RRDBNet
   module_name: src.models.super_resolution
   parameters:
+    in_channels: 1 
+    out_channels: 1
+    num_features: 64
+    growth_channels: 32
+    upscale_factor: *scaling_factor
 
 dataloader:
   class_name: SRKneeMRILoader
@@ -23,15 +28,15 @@ trainer:
   class_name: SRTrainer
   module_name: tasks.SR.trainer
   parameters:
-    num_epochs: 50
-    early_stopping_patience: 10
+    num_epochs: 25
+    early_stopping_patience: 5
     lr_scheduler: plateau
     lr: 0.00002
-    weight_decay: 0
+    weight_decay: 0.0
     track: *track
     loss:
       module_name: src.optimisation.losses
-      class_name: SRLoss
+      class_name: EPFLoss
       parameters:
     metric:
       - module_name: torchmetrics.image

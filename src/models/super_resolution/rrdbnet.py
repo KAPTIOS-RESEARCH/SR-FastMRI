@@ -1,109 +1,54 @@
-import functools
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-def make_layers(block, n_layers):
-    """
-    Creates a sequential container with a specified number of identical layers.
-
-    Args:
-        block (nn.Module): The block to repeat.
-        n_layers (int): The number of layers to create.
-
-    Returns:
-        nn.Sequential: A sequential container of the repeated blocks.
-    """
-    return nn.Sequential(*(block() for _ in range(n_layers)))
-
 class ResidualDenseBlock(nn.Module):
-    """
-    Residual Dense Block with 5 convolutional layers.
-
-    Args:
-        in_channels (int): Number of feature maps.
-        out_channels (int): Growth channel (intermediate channels).
-    """
-    def __init__(self, in_channels = 64, out_channels = 32):
+    def __init__(self, in_channels=64, growth=32):
         super(ResidualDenseBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, 3, 1, 1, bias=True)
-        self.conv2 = nn.Conv2d(in_channels + out_channels, out_channels, 3, 1, 1, bias=True)
-        self.conv3 = nn.Conv2d(in_channels + 2 * out_channels, out_channels, 3, 1, 1, bias=True)
-        self.conv4 = nn.Conv2d(in_channels + 3 * out_channels, out_channels, 3, 1, 1, bias=True)
-        self.conv5 = nn.Conv2d(in_channels + 4 * out_channels, in_channels, 3, 1, 1, bias=True)
+        self.growth = growth
+        self.conv1 = nn.Conv2d(in_channels, growth, 3, 1, 1, bias=True)
+        self.conv2 = nn.Conv2d(in_channels + growth, growth, 3, 1, 1, bias=True)
+        self.conv3 = nn.Conv2d(in_channels + 2 * growth, growth, 3, 1, 1, bias=True)
+        self.conv4 = nn.Conv2d(in_channels + 3 * growth, growth, 3, 1, 1, bias=True)
+        self.conv5 = nn.Conv2d(in_channels + 4 * growth, in_channels, 3, 1, 1, bias=True)
         self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
     def forward(self, x):
         x1 = self.lrelu(self.conv1(x))
-        x2 = self.lrelu(self.conv2(torch.cat((x, x1), 1)))
-        x3 = self.lrelu(self.conv3(torch.cat((x, x1, x2), 1)))
-        x4 = self.lrelu(self.conv4(torch.cat((x, x1, x2, x3), 1)))
-        x5 = self.conv5(torch.cat((x, x1, x2, x3, x4), 1))
-        return x5 * 0.2 + x
-
-class RRDB(nn.Module):
-    """
-    Residual in Residual Dense Block composed of three ResidualDenseBlock blocks.
-
-    Args:
-        in_channels (int): Number of feature maps.
-        out_channels (int): Growth channel.
-    """
-    def __init__(self, in_channels = 32, out_channels = 32):
-        super(RRDB, self).__init__()
-        self.RDB1 = ResidualDenseBlock(in_channels, out_channels)
-        self.RDB2 = ResidualDenseBlock(in_channels, out_channels)
-        self.RDB3 = ResidualDenseBlock(in_channels, out_channels)
-
-    def forward(self, x):
-        out = self.RDB1(x)
-        out = self.RDB2(out)
-        out = self.RDB3(out)
-        return out * 0.2 + x
+        x2 = self.lrelu(self.conv2(torch.cat([x, x1], dim=1)))
+        x3 = self.lrelu(self.conv3(torch.cat([x, x1, x2], dim=1)))
+        x4 = self.lrelu(self.conv4(torch.cat([x, x1, x2, x3], dim=1)))
+        x5 = self.conv5(torch.cat([x, x1, x2, x3, x4], dim=1))
+        return x + x5 * 0.2 
     
-class RRDBNet(nn.Module):
-    """
-    Network structure for image super-resolution based on Residual in Residual Dense Blocks.
-
-    Args:
-        in_nc (int): Number of input channels.
-        out_nc (int): Number of output channels.
-        nf (int): Number of feature maps.
-        nb (int): Number of RRDB blocks.
-        gc (int): Growth channel.
-    """
-    def __init__(self, in_channels = 1, out_channels = 1, n_feature_maps = 64, n_blocks = 23, growth_channel = 32):
-        super(RRDBNet, self).__init__()
-        RRDB_block_f = functools.partial(RRDB, in_channels = n_feature_maps, out_channels = growth_channel)
-
-        # Initial feature extraction
-        self.conv_first = nn.Conv2d(in_channels, n_feature_maps, 3, 1, 1, bias=True)
-
-        # Residual in Residual Dense Blocks
-        self.RRDB_trunk = make_layers(RRDB_block_f, n_blocks)
-        self.trunk_conv = nn.Conv2d(n_feature_maps, n_feature_maps, 3, 1, 1, bias=True)
-
-        # Upsampling layers
-        self.upconv1 = nn.Conv2d(n_feature_maps, n_feature_maps, 3, 1, 1, bias=True)
-
-        # High-resolution and final output layers
-        self.HRconv = nn.Conv2d(n_feature_maps, n_feature_maps, 3, 1, 1, bias=True)
-        self.conv_last = nn.Conv2d(n_feature_maps, out_channels, 3, 1, 1, bias=True)
-
-        self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
+class RRDB(nn.Module):
+    def __init__(self, in_channels=64, growth=32):
+        super(RRDB, self).__init__()
+        self.rdb1 = ResidualDenseBlock(in_channels, growth)
+        self.rdb2 = ResidualDenseBlock(in_channels, growth)
+        self.rdb3 = ResidualDenseBlock(in_channels, growth)
+        self.concat_conv = nn.Conv2d(in_channels * 3, in_channels, kernel_size=1)
 
     def forward(self, x):
-        # Initial feature extraction
-        fea = self.conv_first(x)
+        x1 = self.rdb1(x)
+        x2 = self.rdb2(x1)
+        x3 = self.rdb3(x2)
+        return self.concat_conv(torch.cat([x1, x2, x3], dim=1))
 
-        # Pass through RRDB trunk and add residual
-        trunk = self.trunk_conv(self.RRDB_trunk(fea))
-        fea += trunk
+class RRDBNet(nn.Module):
+    def __init__(self, in_channels=1, out_channels=1, num_features=64, growth_channels=32, upscale_factor=2):
+        super(RRDBNet, self).__init__()
+        self.in_conv = nn.Sequential(
+            nn.Conv2d(in_channels, num_features, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(num_features, num_features, kernel_size=3, stride=1, padding=1)
+        )
+        self.rrdb = RRDB(num_features, growth_channels)
+        self.out_conv = nn.Conv2d(num_features, out_channels * (upscale_factor ** 2), kernel_size=3, stride=1, padding=1)
+        self.upscale = nn.PixelShuffle(upscale_factor)
 
-        # Upsampling by factor of 2 twice
-        fea = self.lrelu(self.upconv1(F.interpolate(fea, scale_factor=2, mode='nearest')))
-
-        # Final high-resolution output
-        out = self.conv_last(self.lrelu(self.HRconv(fea)))
-
-        return out
+    def forward(self, x):
+        x1 = self.in_conv(x)
+        x2 = self.rrdb(x1)
+        x3 = self.out_conv(x2)
+        x4 = self.upscale(x3)
+        return x4

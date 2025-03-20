@@ -77,9 +77,9 @@ class ContentLoss(nn.Module):
             'feature_loss': self.feature_loss(A, B)
         }
 
-class SRLoss(nn.Module):
+class EPFLoss(nn.Module):
     def __init__(self):
-        super(SRLoss, self).__init__()
+        super(EPFLoss, self).__init__()
         self.lambda_1 = 0.7
         self.lambda_2 = 0.3
         self.lambda_3 = 1

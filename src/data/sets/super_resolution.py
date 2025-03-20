@@ -8,6 +8,7 @@ from src.data.utils.fastMRI.transforms import SuperResolutionTransform
 from onnxruntime.quantization import CalibrationDataReader
 from src.utils.image import extract_patches
 from src.data.utils.fastMRI.transforms import SRSample
+import numpy as np
 
 class FastMRISuperResolutionDataset(torch.utils.data.Dataset):
     def __init__(
@@ -51,29 +52,27 @@ class FastMRISuperResolutionDataset(torch.utils.data.Dataset):
             image = hf[self.recons_key][slice_idx]
         sample = self.transform(image, self.lr_image_scale)
         return sample
-    
+
 class FastMRISuperResolutionDataReader(CalibrationDataReader):
     def __init__(self, data_folder, num_samples=100):
         self.num_samples = num_samples
         self.data_folder = data_folder
-        self.preprocess_flag = True
-        self.enum_data_dicts = []
+        self.enum_data_dicts = None
         self.load_data()
 
     def load_data(self):
         dataset = FastMRISuperResolutionDataset(self.data_folder)
-        data_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
-
-        batch_data = []
-        for i, sample in enumerate(data_loader):
-            if i >= self.num_samples:
-                break
-            batch_data.append(sample)
-
-        self.enum_data_dicts = iter([{"input": sample.image.numpy()} for sample in batch_data])
+        self.data_dicts = [
+            {"input": np.expand_dims(dataset[i].image.numpy(), axis=0).astype(np.float32)}
+            for i in range(self.num_samples)
+        ]
+        self.enum_data_dicts = iter(self.data_dicts)
 
     def get_next(self):
         return next(self.enum_data_dicts, None)
+
+    def rewind(self):
+        self.enum_data_dicts = iter(self.data_dicts)
     
 
 class FastMRIPatchSuperResolutionDataset(torch.utils.data.Dataset):

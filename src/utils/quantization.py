@@ -1,11 +1,7 @@
-import torch, os, logging, time
-import numpy as np
+import torch, os, logging
 from torch import nn
-from onnxruntime.quantization import quantize_static, CalibrationDataReader, QuantFormat
-from onnxruntime import InferenceSession
-from typing import Sequence, Any, Tuple, List
+from onnxruntime.quantization import quantize_static, CalibrationDataReader, QuantFormat, QuantType
 from onnxruntime.quantization import quant_pre_process
-from src.data.utils.fastMRI.transforms import SRSample
 
 def get_layers_to_fuse(model: nn.Module, prefix: str = "") -> list:
     """Recursively retrieves a list of groupable layers for fusion.
@@ -81,60 +77,9 @@ def quantize_onnx_model(model_path: str, quantized_model_path: str, calibration_
         model_path,
         quantized_model_path,
         calibration_dataset,
-        quant_format=QuantFormat.QDQ
+        quant_format=QuantFormat.QDQ,
+        weight_type=QuantType.QInt8,
     )
-
     logging.info(f"Original ONNX model size (MB): {os.path.getsize(model_path) / (1024 * 1024):.2f}")
     logging.info(f"Quantized ONNX model size (MB): {os.path.getsize(quantized_model_path) / (1024 * 1024):.2f}")
     logging.info(f"Quantized model saved to {quantized_model_path}")
-
-def get_session_performance(
-    session: InferenceSession, 
-    data: List[SRSample], 
-):
-    """Run inference of a batch to retrieve the model accuracy and time performances.
-
-    Args:
-        session (InferenceSession): The model onnxruntime session
-        data (List[SRSample]): The batch SRSample
-
-    Returns:
-        tuple[float, float]: Average inference time in milliseconds, accuracy
-    """
-    times = []
-    input_name = session.get_inputs()[0].name
-    output_name = session.get_outputs()[0].name
-    for sample in data:
-        x = x.numpy()
-        x = np.expand_dims(x, axis=0)
-        start_time = time.perf_counter()
-        session.run([output_name], {input_name: x})[0]
-        times.append(time.perf_counter() - start_time)
-
-    avg_time_ms = np.mean(times) * 1000
-    return avg_time_ms
-
-def quantized_session_performance_benchmark(
-        original_model_path: str,
-        quantized_model_path: str,
-        data_sample: Tuple[torch.Tensor, torch.Tensor], 
-        device_providers: Sequence[str | tuple[str, dict[Any, Any]]] | None = None,
-    ):
-    """Compares the performance of a model with its quantized version.
-
-    Args:
-        original_model_path (str): The original model .onnx file path
-        quantized_model_path (str): The quantized model .onnx file path
-        x (torch.Tensor): The input data
-        y (torch.Tensor): The target data
-        runs (int, optional): The number of inference runs to perform. Defaults to 50.
-    """
-    non_quantized_session = InferenceSession(original_model_path, providers=device_providers)
-    quantized_session = InferenceSession(quantized_model_path, providers=device_providers)
-
-    t1 = get_session_performance(non_quantized_session, data_sample)
-    t2 = get_session_performance(quantized_session, data_sample)
-
-    print(f"🟢 Non-Quantized Model Avg Inference Time: {t1:.2f} ms")
-    print(f"🔥 Quantized Model Avg Inference Time: {t2:.2f} ms")
-    print(f"🚀 Speedup: {t1 / t1:.2f}x faster with quantization")
