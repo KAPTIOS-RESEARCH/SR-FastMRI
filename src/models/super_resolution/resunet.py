@@ -22,12 +22,24 @@ class ResidualBlock(nn.Module):
         out += identity
         return self.relu(out)
 
+# class UpConvBlock(nn.Module):
+#     def __init__(self, in_channels: int, out_channels: int):
+#         super().__init__()
+#         self.layers = nn.Sequential(
+#             nn.ConvTranspose2d(in_channels, in_channels, kernel_size=2, stride=2),
+#             ResidualBlock(in_channels, out_channels)
+#         )
+
+#     def forward(self, x: torch.Tensor) -> torch.Tensor:
+#         return self.layers(x)
+
 class UpConvBlock(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int):
+    def __init__(self, in_channels: int, out_channels: int, upscale_factor: int = 2):
         super().__init__()
         self.layers = nn.Sequential(
-            nn.ConvTranspose2d(in_channels, in_channels, kernel_size=2, stride=2),
-            ResidualBlock(in_channels, out_channels)
+            nn.Conv2d(in_channels, in_channels * (upscale_factor ** 2), kernel_size=3, padding=1),
+            nn.PixelShuffle(upscale_factor),
+            ResidualBlock(in_channels, out_channels),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -38,7 +50,8 @@ class Encoder(nn.Module):
         super().__init__()
         self.encoder = nn.Sequential(
             nn.AvgPool2d(2),
-            ResidualBlock(in_channels, out_channels)
+            ResidualBlock(in_channels, out_channels),
+            nn.Dropout(0.25)
         )
 
     def forward(self, x):

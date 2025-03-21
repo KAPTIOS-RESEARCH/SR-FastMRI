@@ -19,7 +19,7 @@ dataloader:
     train_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_train/
     val_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_val/
     lr_image_scale: *scaling_factor
-    batch_size: 16
+    batch_size: 64
     num_workers: 8
     debug: False
 
@@ -30,16 +30,13 @@ trainer:
     num_epochs: 25
     early_stopping_patience: 5
     lr_scheduler: plateau
-    lr: 0.00001
+    lr: 0.00002
     weight_decay: 0.0
     track: *track
     loss:
-      class_name: EPFLoss
+      class_name: L1SSIM
       module_name: src.optimisation.losses
       parameters:
-          lambda_1: 0.7
-          lambda_2: 0.3
-          lambda_3: 1
     metric:
       - module_name: torchmetrics.image
         class_name: PeakSignalNoiseRatio
