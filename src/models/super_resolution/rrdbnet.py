@@ -36,13 +36,13 @@ class RRDB(nn.Module):
         return self.concat_conv(torch.cat([x1, x2, x3], dim=1))
 
 class RRDBNet(nn.Module):
-    def __init__(self, in_channels=1, out_channels=1, num_features=64, growth_channels=32, upscale_factor=2):
+    def __init__(self, in_channels=1, out_channels=1, num_features=64, growth_channels=32, upscale_factor=2, n_blocks=3):
         super(RRDBNet, self).__init__()
         self.in_conv = nn.Sequential(
             nn.Conv2d(in_channels, num_features, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(num_features, num_features, kernel_size=3, stride=1, padding=1)
         )
-        self.rrdb = RRDB(num_features, growth_channels)
+        self.rrdb = nn.Sequential(*[RRDB(num_features, growth_channels) for i in range(0, n_blocks)])
         self.out_conv = nn.Conv2d(num_features, out_channels * (upscale_factor ** 2), kernel_size=3, stride=1, padding=1)
         self.upscale = nn.PixelShuffle(upscale_factor)
 
