@@ -51,29 +51,24 @@ The framework supports exporting a saved PyTorch model to ONNX.
 To do so, an export config yaml file should be given as flag to the ```export.py``` script.
 
 ```bash
-python export.py --export_config_path ./tasks/mnist/export.yaml
+python export.py --export_config_path ./tasks/SR/export.yaml
 ```
 
 This file should look like : 
 
 ```yaml
 export_path: './exports'
-model_path: './logs/best_model.pth'
-model_input_size: !!python/tuple [128, 128]
+model_path: './saved_models/best_model.pth'
 quantization_dataset:
-  module_name: src.data.set.super_resolution
+  module_name: src.data.sets.super_resolution
   class_name: FastMRISuperResolutionDataReader
   parameters:
     data_folder: /path/to/dataset
     num_samples: 100
 model:
-  class_name: EDSR
+  class_name: SRResUNet
   module_name: src.models.super_resolution
   parameters:
-    in_channels: 1
-    scale_factor: 2
-    num_blocks: 16
-    num_feats: 64
 ```
 
 By default, the export also saves a quantized version of the model. For this to work, a Calibration Dataset should be passed using the ```quantization_dataset``` key.
