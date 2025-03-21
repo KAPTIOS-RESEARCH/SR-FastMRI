@@ -30,27 +30,3 @@ class L1MSSIMLoss(nn.Module):
         l1_loss = self.l1_loss(x, y)
         mssim_loss = 1 - self.mssim(x, y)
         return self.alpha * mssim_loss + (1 - self.alpha) * l1_loss
-
-
-# class L1SSIMEdgeLoss(nn.Module):
-#     """Implementation from Loss Functions for Image Restoration with Neural Networks"""
-#     def __init__(self):
-#         super(L1SSIMEdgeLoss, self).__init__()
-#         device = get_available_device()
-#         self.lambda1 = 0.7
-#         self.lambda2 = 0.1
-#         self.lambda3 = 0.1
-#         self.l1_loss = nn.L1Loss()
-#         self.ssim = SSIM().to(device)
-#         self.edge_detector = SobelFilter().to(device)
-    
-#     def l1_edge_loss(self, x, y):
-#         A_edge = self.edge_detector(x)
-#         B_edge = self.edge_detector(y)
-#         return self.l1_loss(A_edge, B_edge)
-    
-#     def forward(self, x, y):
-#         ssim_loss = self.lambda1 *  (1 - self.ssim(x, y))
-#         l1_loss = self.lambda2 * self.l1_loss(x, y)
-#         edge_loss = self.lambda3 * self.l1_edge_loss(x, y) 
-#         return ssim_loss + l1_loss + edge_loss
