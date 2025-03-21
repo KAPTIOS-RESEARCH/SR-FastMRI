@@ -59,8 +59,11 @@ class BaseTrainer(object):
             test_metrics = [{'name': metric['name'], 'value': metric['func'](all_preds, all_targets)} for metric in self.metrics]
 
             if self.parameters['track']:
-                wandb.log({f"Train/{self.parameters['loss']['class_name']}": train_loss, '_step_': epoch})
-                wandb.log({f"Test/{self.parameters['loss']['class_name']}": test_loss, '_step_': epoch})
+                wandb.log({
+                    f"Train/{self.parameters['loss']['class_name']}": train_loss,
+                    f"Test/{self.parameters['loss']['class_name']}": test_loss,
+                    "_step_": epoch
+                })
                 for metric in test_metrics:
                     wandb.log({f"Test/{metric['name']}": metric['value'], '_step_': epoch})
                 

@@ -1,17 +1,12 @@
-name: FSRCNN_FastMRI
+name: SRRESUNET_FastMRI
 seed: 1234
 track: &track True
 script_path: /home/nvidia/Projects/Expe/FastMRI/SRFastMRI
 scaling_factor: &scaling_factor 2
 model:
-  class_name: FSRCNN
+  class_name: SRResUNet
   module_name: src.models.super_resolution
   parameters:
-    scale_factor: *scaling_factor
-    d: 56
-    s: 12
-    m: 4
-
 dataloader:
   class_name: SRKneeMRILoader
   module_name: src.data.loaders.kneeMRI
@@ -19,7 +14,7 @@ dataloader:
     train_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_train/
     val_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_val/
     lr_image_scale: *scaling_factor
-    batch_size: 64
+    batch_size: 16
     num_workers: 8
     debug: False
 
@@ -34,9 +29,10 @@ trainer:
     weight_decay: 0.0
     track: *track
     loss:
-      class_name: L1SSIM
+      class_name: L1MSSIMEdgeLoss
       module_name: src.optimisation.losses
       parameters:
+        alpha: 0.84
     metric:
       - module_name: torchmetrics.image
         class_name: PeakSignalNoiseRatio

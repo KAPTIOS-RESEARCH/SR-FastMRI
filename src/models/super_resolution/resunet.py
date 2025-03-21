@@ -9,6 +9,7 @@ class ResidualBlock(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
         )
+        self.dropout = nn.Dropout(0.25)
         self.relu = nn.ReLU()
         self.skip = nn.Sequential()
         if in_channels != out_channels:
@@ -21,27 +22,14 @@ class ResidualBlock(nn.Module):
         out = self.conv(x)
         out += identity
         return self.relu(out)
-
-# class UpConvBlock(nn.Module):
-#     def __init__(self, in_channels: int, out_channels: int):
-#         super().__init__()
-#         self.layers = nn.Sequential(
-#             nn.ConvTranspose2d(in_channels, in_channels, kernel_size=2, stride=2),
-#             ResidualBlock(in_channels, out_channels)
-#         )
-
-#     def forward(self, x: torch.Tensor) -> torch.Tensor:
-#         return self.layers(x)
-
+                
 class UpConvBlock(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, upscale_factor: int = 2):
+    def __init__(self, in_channels: int, out_channels: int):
         super().__init__()
         self.layers = nn.Sequential(
-            nn.Conv2d(in_channels, in_channels * (upscale_factor ** 2), kernel_size=3, padding=1),
-            nn.PixelShuffle(upscale_factor),
-            ResidualBlock(in_channels, out_channels),
+            nn.ConvTranspose2d(in_channels, in_channels, kernel_size=2, stride=2),
+            ResidualBlock(in_channels, out_channels)
         )
-
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.layers(x)
 
@@ -63,12 +51,13 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
         self.transpose = nn.ConvTranspose2d(in_channels, in_channels, kernel_size=2, stride=2)
         self.conv = ResidualBlock(in_channels + out_channels, out_channels)
-
+        self.dropout = nn.Dropout(0.25)
+        
     def forward(self, x, skip):
         x = self.transpose(x)
         x = torch.cat([x, skip], dim=1)
         x = self.conv(x)
-        return x
+        return self.dropout(x)
     
 class SRResUNet(nn.Module):
     def __init__(self):

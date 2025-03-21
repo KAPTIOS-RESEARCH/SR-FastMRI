@@ -41,7 +41,7 @@ The CLI will ask for the API key that can be found in your wandb account page.
 You can run an task by pointing to its configuration file like :
 
 ```bash
-python train.py --config_path ./tasks/SR/config.yaml
+python main.py --config_path ./tasks/SR/config.yaml
 ```
 
 
