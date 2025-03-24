@@ -1,4 +1,4 @@
-name: SRRESUNET_FastMRI
+name: SRRESUNET_L1MSSIMEdgeLoss
 seed: 1234
 track: &track True
 script_path: /home/nvidia/Projects/Expe/FastMRI/SRFastMRI
@@ -26,13 +26,15 @@ trainer:
     early_stopping_patience: 5
     lr_scheduler: plateau
     lr: 0.00002
-    weight_decay: 0.0
+    weight_decay: 0.00001
     track: *track
     loss:
       class_name: L1MSSIMEdgeLoss
       module_name: src.optimisation.losses
       parameters:
-        alpha: 0.84
+        lambda_1: 0.6
+        lambda_2: 0.1
+        lambda_3: 0.4
     metric:
       - module_name: torchmetrics.image
         class_name: PeakSignalNoiseRatio

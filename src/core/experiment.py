@@ -6,6 +6,7 @@ from src.utils.device import get_available_device
 from src.core.trainer import BaseTrainer
 from torch import nn
 from datetime import datetime
+from src.utils.summary import print_model_size
 
 class AbstractExperiment(ABC):
     def __init__(self):
@@ -66,6 +67,7 @@ class BaseExperiment(AbstractExperiment):
         params = model_config['parameters']
         model = instanciate_module(md_name, cls_name, params)
         model.to(self.device)
+        print_model_size(model)
         return model
     
     def load_dataloader(self, dataloader_config):

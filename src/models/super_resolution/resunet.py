@@ -63,21 +63,21 @@ class SRResUNet(nn.Module):
     def __init__(self):
         super(SRResUNet, self).__init__()
 
-        self.upsampling = UpConvBlock(64, 32)
+        self.upsampling = UpConvBlock(64, 64)
         self.in_conv = ResidualBlock(1, 64)
         
         self.enc_1 = Encoder(64, 128)
         self.enc_2 = Encoder(128, 256)
         self.enc_3 = Encoder(256, 512)
-        self.enc_4 = Encoder(512, 512)
+        self.enc_4 = Encoder(512, 1024)
 
-        self.dec_1 = Decoder(512, 512)
+        self.dec_1 = Decoder(1024, 512)
         self.dec_2 = Decoder(512, 256)
         self.dec_3 = Decoder(256, 128)
         self.dec_4 = Decoder(128, 64)
-        self.dec_5 = Decoder(64, 32)
+        self.dec_5 = Decoder(64, 64)
         
-        self.out_conv = nn.Conv2d(32, 1, kernel_size=1)
+        self.out_conv = nn.Conv2d(64, 1, kernel_size=1)
 
     def forward(self, x):
         x1 = self.in_conv(x)
