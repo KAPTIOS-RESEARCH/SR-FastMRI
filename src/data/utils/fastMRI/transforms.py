@@ -13,6 +13,7 @@ from .fftc import *
 from .math import *
 from .coil_combine import *
 from .subsampling import MaskFunc
+from src.data.utils.preprocessing import *
 
 def downsample_hr_mri(image: torch.Tensor, target_size: int = 128, noise_std=4.) -> torch.Tensor:
     """
@@ -356,11 +357,14 @@ class SuperResolutionTransform:
     def __call__(
         self,
         image: np.ndarray,
-        scale: int,
+        kspace: np.ndarray,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, str, int, float]:
+        low_pass_radius = 33
+        target_snr = 20
         image = torch.from_numpy(image)
         image, mean, std = normalize_instance(image, eps=1e-11)
         image = image.clamp(-6, 6)
         input_size = image.shape[-1]
-        lr_image = downsample_hr_mri(image, target_size=input_size//scale)
+        lr_image = torch.from_numpy(hr_mri_to_lr(kspace, low_pass_radius, target_snr, input_size))
+        lr_image = lr_image.clamp(-6, 6)
         return SRSample(lr_image.unsqueeze(0), image.unsqueeze(0), mean, std)

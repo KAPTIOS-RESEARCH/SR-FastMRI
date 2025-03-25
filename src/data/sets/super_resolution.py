@@ -49,8 +49,9 @@ class FastMRISuperResolutionDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx) -> SRSample:
         fname, slice_idx = self.samples[idx]
         with h5py.File(fname, "r") as hf:
+            kspace = hf['kspace'][slice_idx]
             image = hf[self.recons_key][slice_idx]
-        sample = self.transform(image, self.lr_image_scale)
+        sample = self.transform(image, kspace)
         return sample
 
 class FastMRISuperResolutionDataReader(CalibrationDataReader):
