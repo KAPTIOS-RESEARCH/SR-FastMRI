@@ -314,8 +314,6 @@ def normalize_instance(
 
     return normalize(data, mean, std, eps), mean, std
 
-
-    
 def resize_tensor(tensor, new_size=(256, 256)):
     """
     Resizes a 2D tensor to the specified size using bilinear interpolation.
@@ -358,6 +356,7 @@ class SuperResolutionTransform:
         self,
         image: np.ndarray,
         kspace: np.ndarray,
+        scaling_factor: int = 2,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, str, int, float]:
         low_pass_radius = 33
         target_snr = 20
@@ -367,4 +366,5 @@ class SuperResolutionTransform:
         input_size = image.shape[-1]
         lr_image = torch.from_numpy(hr_mri_to_lr(kspace, low_pass_radius, target_snr, input_size))
         lr_image = lr_image.clamp(-6, 6)
+        lr_image = resize_tensor(lr_image, (input_size//scaling_factor, input_size//scaling_factor))
         return SRSample(lr_image.unsqueeze(0), image.unsqueeze(0), mean, std)
