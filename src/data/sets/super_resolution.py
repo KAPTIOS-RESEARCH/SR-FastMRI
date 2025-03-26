@@ -4,10 +4,10 @@ from typing import (
 )
 import h5py
 import torch
-from src.data.utils.fastMRI.transforms import SuperResolutionTransform
+from src.data.utils.transforms import SuperResolutionTransform
 from onnxruntime.quantization import CalibrationDataReader
 from src.utils.image import extract_patches
-from src.data.utils.fastMRI.transforms import SRSample
+from src.data.utils.transforms import SRSample
 import numpy as np
 
 class FastMRISuperResolutionDataset(torch.utils.data.Dataset):
@@ -16,13 +16,18 @@ class FastMRISuperResolutionDataset(torch.utils.data.Dataset):
         root: Union[str, Path],
         challenge: str = 'singlecoil',
         transform = None,
-        lr_image_scale: int = 2
+        lr_image_scale: int = 2,
+        low_pass_radius: float = 30.,
+        target_snr: float = 20.
     ):
         if challenge not in ("singlecoil", "multicoil"):
             raise ValueError('Challenge should be either "singlecoil" or "multicoil"')
 
         self.root = Path(root)
         self.lr_image_scale = lr_image_scale
+        self.low_pass_radius = low_pass_radius
+        self.target_snr = target_snr
+        
         self.recons_key = (
             "reconstruction_esc" if challenge == "singlecoil" else "reconstruction_rss"
         )
@@ -50,8 +55,16 @@ class FastMRISuperResolutionDataset(torch.utils.data.Dataset):
         fname, slice_idx = self.samples[idx]
         with h5py.File(fname, "r") as hf:
             kspace = hf['kspace'][slice_idx]
-            image = hf[self.recons_key][slice_idx]
-        sample = self.transform(image, kspace, self.lr_image_scale)
+            target_image = hf[self.recons_key][slice_idx]
+            attrs = dict(hf.attrs)
+        sample = self.transform(
+            kspace, 
+            target_image, 
+            attrs, 
+            self.lr_image_scale, 
+            self.low_pass_radius, 
+            self.target_snr
+        )
         return sample
 
 class FastMRISuperResolutionDataReader(CalibrationDataReader):

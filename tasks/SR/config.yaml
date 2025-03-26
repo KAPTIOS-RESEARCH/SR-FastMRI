@@ -14,6 +14,8 @@ dataloader:
     train_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_train/
     val_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_val/
     lr_image_scale: *scaling_factor
+    low_pass_radius: 30.
+    target_snr: 20.
     batch_size: 16
     num_workers: 8
     debug: False

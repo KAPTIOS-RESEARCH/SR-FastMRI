@@ -1,7 +1,6 @@
 import pathlib
 from torch.utils.data import DataLoader, Subset
 from . import AbstractDataloader
-from src.data.utils.fastMRI import *
 from src.data.sets.super_resolution import FastMRISuperResolutionDataset
 
 class SRKneeMRILoader(AbstractDataloader):
@@ -9,6 +8,8 @@ class SRKneeMRILoader(AbstractDataloader):
                  train_data_dir: str, 
                  val_data_dir: str, 
                  lr_image_scale: int = 2, 
+                 low_pass_radius: float = 30.,
+                 target_snr: float = 20.,
                  batch_size: int = 4, 
                  num_workers: int = 4,
                  debug: bool = True):
@@ -19,6 +20,9 @@ class SRKneeMRILoader(AbstractDataloader):
         self.debug = debug
         
         self.lr_image_scale = lr_image_scale
+        self.low_pass_radius = low_pass_radius
+        self.target_snr = target_snr
+        
         self.batch_size = batch_size
         self.num_workers = num_workers 
 
@@ -28,7 +32,9 @@ class SRKneeMRILoader(AbstractDataloader):
         train_dataset = FastMRISuperResolutionDataset(
             root=pathlib.Path(self.train_data_dir),
             challenge=self.challenge,
-            lr_image_scale=self.lr_image_scale
+            lr_image_scale=self.lr_image_scale,
+            low_pass_radius=self.low_pass_radius,
+            target_snr=self.target_snr
         )
         
         if self.debug:
@@ -46,7 +52,9 @@ class SRKneeMRILoader(AbstractDataloader):
         val_dataset = FastMRISuperResolutionDataset(
             root=pathlib.Path(self.val_data_dir),
             challenge=self.challenge,
-            lr_image_scale=self.lr_image_scale
+            lr_image_scale=self.lr_image_scale,
+            low_pass_radius=self.low_pass_radius,
+            target_snr=self.target_snr
         )
         
         if self.debug:
