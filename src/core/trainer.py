@@ -5,6 +5,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import ExponentialLR, CosineAnnealingLR, ReduceLROnPlateau
 from src.utils.config import instanciate_module
 from src.optimisation.early_stopping import EarlyStopping
+from torchmetrics.functional.image import peak_signal_noise_ratio as psnr
 
 class BaseTrainer(object):
 
@@ -36,14 +37,6 @@ class BaseTrainer(object):
         self.criterion = instanciate_module(parameters['loss']['module_name'],
                                    parameters['loss']['class_name'], 
                                    parameters['loss']['parameters'])
-
-        # VAL METRICS
-        self.metrics = []
-        for metric_config in parameters['metric']:
-            metric_instance = instanciate_module(metric_config['module_name'],
-                                   metric_config['class_name'], 
-                                   metric_config['parameters'])
-            self.metrics.append({'name': metric_config['class_name'], 'func': metric_instance})
         
     def train(self, dl: DataLoader):
         raise NotImplementedError
@@ -56,28 +49,24 @@ class BaseTrainer(object):
         for epoch in range(num_epochs):
             train_loss = self.train(train_dl)
             test_loss, all_preds, all_targets = self.test(test_dl)
-            test_metrics = [{'name': metric['name'], 'value': metric['func'](all_preds, all_targets)} for metric in self.metrics]
 
+            max_pixel, min_pixel = all_targets.max(), all_targets.min()
+            test_psnr = psnr(all_preds, all_targets, data_range=max_pixel - min_pixel)
+            
             if self.parameters['track']:
                 wandb.log({
                     f"Train/{self.parameters['loss']['class_name']}": train_loss,
                     f"Test/{self.parameters['loss']['class_name']}": test_loss,
+                    f"Test/PSNR": test_psnr,
                     "_step_": epoch
                 })
-                for metric in test_metrics:
-                    wandb.log({f"Test/{metric['name']}": metric['value'], '_step_': epoch})
                 
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step(test_loss)
 
             self.early_stop(self.model, test_loss, log_dir, epoch)
 
-            epoch_log_message = f"Epoch {epoch + 1} / {num_epochs} - Train/Test {self.parameters['loss']['class_name']}: {train_loss:.4f} | {test_loss:.4f}"
-
-            for metric in test_metrics:
-                epoch_log_message += f"; {metric['name']}: {metric['value']:.4f}"
-
-            logging.info(epoch_log_message)
+            logging.info(f"Epoch {epoch + 1} / {num_epochs} - Train/Test {self.parameters['loss']['class_name']}: {train_loss:.4f} | {test_loss:.4f}; PSNR: {test_psnr:.4f}")
 
             if self.early_stop.stop:
                 logging.info(

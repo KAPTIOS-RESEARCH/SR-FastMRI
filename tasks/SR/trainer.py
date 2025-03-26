@@ -47,8 +47,10 @@ class SRTrainer(BaseTrainer):
                     mean = sample.mean.unsqueeze(1).unsqueeze(2).unsqueeze(3).to(self.device)
                     std = sample.std.unsqueeze(1).unsqueeze(2).unsqueeze(3).to(self.device)
                     outputs = (outputs * std + mean).cpu()
+                    
                     all_preds.append(outputs)
                     all_targets.append(targets.cpu())
+                    
                     if idx == 0 and self.parameters['track']:
                         resized_data = F.interpolate(data[:5], size=(targets.shape[-1], targets.shape[-1]), mode='bilinear', align_corners=False).cpu()
                         paired_images = torch.stack([
@@ -57,7 +59,7 @@ class SRTrainer(BaseTrainer):
                             outputs[:5].cpu()
                         ], dim=1)
                         paired_images = paired_images.view(-1, *paired_images.shape[2:])
-                        image_grid = vutils.make_grid(paired_images, nrow=3, normalize=True)
+                        image_grid = vutils.make_grid(paired_images, nrow=3)
                         wandb.log({
                             "Test/Results": wandb.Image(
                                 image_grid, caption="Input / Target / Reconstructed")

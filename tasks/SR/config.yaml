@@ -34,10 +34,6 @@ trainer:
       class_name: L1Loss
       module_name: torch.nn
       parameters:
-    metric:
-      - module_name: torchmetrics.image
-        class_name: PeakSignalNoiseRatio
-        parameters:
 
 experiment:
   class_name: BaseExperiment

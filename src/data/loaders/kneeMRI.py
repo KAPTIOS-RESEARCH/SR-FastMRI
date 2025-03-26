@@ -38,7 +38,7 @@ class SRKneeMRILoader(AbstractDataloader):
         )
         
         if self.debug:
-            train_dataset = Subset(train_dataset, range(self.batch_size * 3))
+            train_dataset = Subset(train_dataset, range(self.batch_size * 2))
         
         dataloader = DataLoader(train_dataset,
                                 batch_size=self.batch_size,
@@ -58,7 +58,7 @@ class SRKneeMRILoader(AbstractDataloader):
         )
         
         if self.debug:
-            val_dataset = Subset(val_dataset, range(self.batch_size * 3))
+            val_dataset = Subset(val_dataset, range(self.batch_size * 2))
             
         dataloader = DataLoader(val_dataset,
                                 batch_size=self.batch_size,
