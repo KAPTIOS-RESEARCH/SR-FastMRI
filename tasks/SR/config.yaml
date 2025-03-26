@@ -11,12 +11,12 @@ dataloader:
   class_name: SRKneeMRILoader
   module_name: src.data.loaders.kneeMRI
   parameters:
-    train_data_dir: /Users/bniepce/Projects/Datasets/fastMRI/knee_singlecoil_val/
-    val_data_dir: /Users/bniepce/Projects/Datasets/fastMRI/knee_singlecoil_val/
+    train_data_dir: /home/nvidia/datasets/knee/singlecoil_val/
+    val_data_dir: /home/nvidia/datasets/knee/singlecoil_val/
     lr_image_scale: *scaling_factor
     low_pass_radius: 30.
     target_snr: 20.
-    batch_size: 2
+    batch_size: 8
     num_workers: 4
     debug: True
 

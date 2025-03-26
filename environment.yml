@@ -36,5 +36,5 @@ dependencies:
     - wandb==0.19.7
     - onnx==1.17.0
     - onnxscript==0.2.2
-    - onnxruntime==1.10.1
+    - onnxruntime==1.21.0
     - onnx2torch==1.5.15
