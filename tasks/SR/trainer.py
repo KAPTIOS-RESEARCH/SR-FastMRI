@@ -44,7 +44,9 @@ class SRTrainer(BaseTrainer):
                     outputs = self.model(data)
                     loss = self.criterion(outputs, targets)
                     test_loss += loss.item()
-                    outputs = outputs.cpu().clamp(-6, 6)
+                    mean = sample.mean.unsqueeze(1).unsqueeze(2).unsqueeze(3).to(self.device)
+                    std = sample.std.unsqueeze(1).unsqueeze(2).unsqueeze(3).to(self.device)
+                    outputs = (outputs * std + mean).cpu()
                     all_preds.append(outputs)
                     all_targets.append(targets.cpu())
                     if idx == 0 and self.parameters['track']:

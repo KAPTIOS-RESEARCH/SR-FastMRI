@@ -1,4 +1,4 @@
-name: SRRESUNET_L1MSSIMEdgeLoss
+name: SRRESUNET_L1
 seed: 1234
 track: &track True
 script_path: /home/nvidia/Projects/Expe/FastMRI/SRFastMRI
@@ -11,32 +11,29 @@ dataloader:
   class_name: SRKneeMRILoader
   module_name: src.data.loaders.kneeMRI
   parameters:
-    train_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_train/
-    val_data_dir: /home/nvidia/Projects/Datasets/fastmri/singlecoil_val/
+    train_data_dir: /Users/bniepce/Projects/Datasets/fastMRI/knee_singlecoil_val/
+    val_data_dir: /Users/bniepce/Projects/Datasets/fastMRI/knee_singlecoil_val/
     lr_image_scale: *scaling_factor
     low_pass_radius: 30.
     target_snr: 20.
-    batch_size: 16
-    num_workers: 8
-    debug: False
+    batch_size: 2
+    num_workers: 4
+    debug: True
 
 trainer:
   class_name: SRTrainer
   module_name: tasks.SR.trainer
   parameters:
-    num_epochs: 25
+    num_epochs: 2
     early_stopping_patience: 5
     lr_scheduler: plateau
     lr: 0.00002
     weight_decay: 0.00001
     track: *track
     loss:
-      class_name: L1MSSIMEdgeLoss
-      module_name: src.optimisation.losses
+      class_name: L1Loss
+      module_name: torch.nn
       parameters:
-        lambda_1: 0.6
-        lambda_2: 0.1
-        lambda_3: 0.4
     metric:
       - module_name: torchmetrics.image
         class_name: PeakSignalNoiseRatio
